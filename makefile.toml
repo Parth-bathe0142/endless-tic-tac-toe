@@ -1,0 +1,9 @@
+[tasks.wasm-web]
+cwd = "./rust"
+command = "wasm-pack"
+args = ["build", "--target", "web", "--out-dir", "../client/wasm"]
+
+[tasks.wasm-node]
+cwd = "./rust"
+command = "wasm-pack"
+args = ["build", "--target", "node", "--out-dir", "../server/wasm"]
