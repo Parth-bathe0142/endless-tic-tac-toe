@@ -90,10 +90,53 @@ test("test making a move, when a move is expiring", () => {
 
     const { array, state, expiring, last } = gameState
     
-    console.log(state)
     expect(last).toBe(8)
     expect(expiring).toBe(3)
 
     expect(state).toEqual(expectedBoard)
+    expect(array).toEqual(expected)
+})
+
+test("test computedTurn 1", () => {
+    const arr = [
+        0, 1, 0,
+        2, 0, 0,
+        0, 3, 0
+    ]
+    
+    const expected = [
+        0, 1, 0,
+        2, 4, 0,
+        0, 3, 0
+    ]
+
+    let gameState = new GameState(arr)
+    let turn = gameState.computedTurn(0)
+    gameState = gameState.turn(turn)!
+
+    const { array } = gameState
+    
+    expect(array).toEqual(expected)
+})
+
+test("test computedTurn 2", () => {
+    const arr = [
+        0, 1, 0,
+        2, 4, 0,
+        0, 3, 0
+    ]
+    
+    const expected = [
+        0, 1, 0,
+        2, 4, 5,
+        0, 3, 0
+    ]
+
+    let gameState = new GameState(arr)
+    let turn = gameState.computedTurn(0)
+    gameState = gameState.turn(turn)!
+
+    const { array } = gameState
+    
     expect(array).toEqual(expected)
 })

@@ -1,3 +1,24 @@
+type Line = [number, number, number]
+
+/**
+ * The columns, rows and diagonals that can count as a win
+ */
+const possibilities: Line[] = [
+    // rows
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+
+    // columns
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+
+    // diaginals
+    [0, 4, 8],
+    [2, 4, 6],
+]
+
 /**
  * X - X
  * O - O
@@ -39,6 +60,18 @@ function cellFromNumber(num: number): Cell {
     }
 }
 
+/**
+ * Returns the "opponent" of the input cell if it
+ * is an X or an O, else returns the original
+ * @param cell The "Player"
+ * @returns the "Opponent"
+ */
+function opposite(cell: Cell): Cell {
+    if(cell == Cell.X) return Cell.O
+    if(cell == Cell.O) return Cell.X
+    return cell
+}
+
 export class GameState {
     /** The latest move */
     last: number = 0
@@ -71,10 +104,25 @@ export class GameState {
      * @param array 
      */
     constructor(array: number[]);
+    /**
+     * Copy constructor
+     * @param gameState state to copy
+     */
+    constructor(gameState: GameState);
 
-    constructor(array?: number[]) {
-        if(array) {
-            this.fromArray(array)
+    constructor(state?: number[] | GameState) {
+        if(state) {
+            // copy
+            if(state instanceof GameState) {
+                const arrayCopy = state.array.slice()
+                this.fromArray(arrayCopy)
+
+            // from array
+            } else {
+                this.fromArray(state)
+            }
+        
+        // new empty
         } else {
             this.fromArray(new Array(9).fill(0))
         }
@@ -183,5 +231,79 @@ export class GameState {
         }
 
         return this
+    }
+
+    computedTurn(mistakeRate: number) {
+        type opportunity = number
+        type index = number
+
+        const opponent = cellFromNumber(this.last)
+        
+        let emptyTiles: index[] = []
+        this.state.flat().forEach((c, i) => {
+            if(c == Cell.N) emptyTiles.push(i)
+        })
+
+
+        // JS has no BTreeMap, using an array of tuples instead
+        let map: [opportunity, index][] = []
+
+        emptyTiles.forEach(idx => {
+            let candidate = new GameState(this)
+            candidate = candidate.turn(idx)!
+
+            const opportunity = candidate.calculateOpportunity(opponent, mistakeRate)
+            map.push([opportunity, idx])
+        })
+
+        const [_, idx] = map.reduce((a, b) => b[0] > a[0] ? b : a)
+
+        return idx
+    }
+
+    private calculateOpportunity(opponent: Cell, mistakeRate: number): number {
+        const player = opposite(opponent)
+
+        let playerScore = 0
+        let opponentScore = 0
+
+        for(const line of possibilities) {
+            playerScore += this.calculateLineScoreFor(line, player)
+            opponentScore += this.calculateLineScoreFor(line, opponent)
+        }
+
+        let mistake = 0
+
+        if(mistakeRate > 0) {
+            mistakeRate = Math.min(mistakeRate, 10)
+
+            mistake = Math.random() * mistakeRate * 2 - mistakeRate
+        }
+
+        return playerScore - opponentScore + mistake
+    }
+
+    private calculateLineScoreFor(line: Line, player: Cell): number {
+        let opponent = opposite(player)
+        let same = 0
+        let diff = 0
+
+        for(const idx of line) {
+            const cell = this.get(idx)
+
+            if(cell == player) same++
+            if(cell == opponent) diff++
+        }
+
+        let score = 0
+        if(same > 0) {
+            score += Math.pow(same, 3)
+
+            if(same == 3 || diff == 2) {
+                score += 8
+            }
+        }
+
+        return score;
     }
 }
